@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useCallback, useRef } from "react"
 import { hightlightsSlides } from "../constants"
 import { useState } from "react";
 import { useEffect } from "react";
@@ -6,10 +6,33 @@ import gsap from "gsap";
 import { pauseImg, playImg, replayImg } from "../utils";
 import { useGSAP } from "@gsap/react";
 
-export const VideoCarousel = () => {
-    const videoRef = useRef([]);
-    const videoSpanRef = useRef([]);
-    const videoDivRef = useRef([]);
+const VideoCarousel = () => {
+// ref to keep track
+const videoRef = useRef([]); // track video playing
+const videoSpanRef = useRef([]); // track the no of dots for video
+const videoDivRef = useRef([]); // track progress animation in each dot
+
+      // function to handle end of the video in the carousel
+  const handleVideoEnd = (index) => {
+    if (index !== 3) {
+      handleProcess("video-end", index);
+    } else {
+      handleProcess("video-last");
+    }
+  };
+
+  // Define the ref callbacks
+  const setVideoRef = useCallback((el, i) => {
+    videoRef.current[i] = el;
+  }, []);
+
+  const setVideoDivRef = useCallback((el, i) => {
+    videoDivRef.current[i] = el;
+  }, []);
+
+  const setVideoSpanRef = useCallback((el, i) => {
+    videoSpanRef.current[i] = el;
+  }, []);
 
     const [video , setVideo] =useState({
         isEnd: false,
@@ -25,7 +48,9 @@ export const VideoCarousel = () => {
 
     useGSAP(() => {
         gsap.to('#slider' , {
-            transform : `translateX(${-100 * videoId}%)`
+            transform : `translateX(${-100 * videoId}%)`,
+            ease: "power4.inOut",
+            duration: 2,
         })
 
         gsap.to('#video', {
@@ -55,7 +80,9 @@ export const VideoCarousel = () => {
 
     }, [startPlay, videoId, isPlaying , loadedData])
 
-    const handleLoadedMetadata = (i , e) => setLoadedData((pre) => [...pre , e])
+    const handleLoadedMetadata = useCallback((i, e) => {
+        setLoadedData((pre) => [...pre, e]);
+      }, []);
 
 
     useEffect(() => {
@@ -124,10 +151,12 @@ export const VideoCarousel = () => {
                 setVideo((pre) => ({...pre, isLastPlay : false , videoId: 0}))
                 break;
             case 'play': 
-                setVideo((pre) => ({...pre, isPlaying: !pre.isPlaying }))
+                videoRef.current[videoId].play();
+                setVideo((pre) => ({ ...pre, isPlaying: true }));
                 break; 
             case 'pause': 
-                setVideo((pre) => ({...pre, isPlaying: !pre.isPlaying }))
+                videoRef.current[videoId].pause();
+                setVideo((pre) => ({ ...pre, isPlaying: false }));
                 break;          
         
             default:
@@ -146,15 +175,11 @@ export const VideoCarousel = () => {
                         muted 
                         className={`${ list.id === 2 && 'translate-x-44'} poniter-events-none`}
                         preload="auto" 
-                        ref={(el) => (videoRef.current[i] = el)} 
-                        onEnded={() => 
-                            i !== 3 ? handleProcess('video-end' , i) : handleProcess('video-last')
-                        }
-                        onPlay={() =>{
-                            setVideo ((prevVideo)=> ({
-                                ...prevVideo, isPlaying: true
-                            }))
-                        }} 
+                        ref={(el) => setVideoRef(el, i)}
+                        onEnded={() => handleVideoEnd(i)}
+                        onPlay={() => {
+                          setVideo((pre) => ({ ...pre, isPlaying: true }));
+                        }}
                         onLoadedMetadata={(e) => handleLoadedMetadata(i ,e)}
                         >
                             <source src={list.video} type="video/mp4"/>
@@ -176,10 +201,10 @@ export const VideoCarousel = () => {
                 {videoRef.current.map( ( _ , i) => (
                     <span
                     key={i}
-                    ref={(el) => (videoDivRef.current[i] = el)}
+                    ref={(el) => setVideoDivRef(el, i)}
                     className="mx-2 w-3 h-3 bg-gray-200 rounded-full relative cursor-pointer"
                     >
-                        <span className="absolute w-full h-full rounded-full" ref={(el) => (videoSpanRef.current[i] = el)} />
+                        <span className="absolute w-full h-full rounded-full" ref={(el) => setVideoSpanRef(el, i)}/>
                     </span>
                 ))}                
             </div>
@@ -195,3 +220,5 @@ export const VideoCarousel = () => {
     </>
   )
 }
+
+export default VideoCarousel;
