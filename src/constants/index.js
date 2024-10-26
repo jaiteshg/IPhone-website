@@ -17,7 +17,7 @@ import {
       textLists: [
         "Enter A17 Pro.",
         "Game‑changing chip.",
-        "Groundbreaking performance.",
+        "Groundbreaking performance."
       ],
       video: highlightFirstVideo,
       videoDuration: 4,
